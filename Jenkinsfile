@@ -37,7 +37,8 @@ pipeline {
             steps {
                sh 'pwd'
                sh 'terraform init -reconfigure'
-               sh 'terraform plan -out=tfplan'
+               sh 'terraform plan -input=false -out tfplan'
+	       sh 'terraform show -no-color tfplan > tfplan.txt'
             }
         }
 	stage ('check plan') {
