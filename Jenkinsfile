@@ -32,7 +32,7 @@ pipeline {
         stage('Terraform Init') {
             steps {
                sh 'pwd'
-               sh 'terraform init'
+               sh 'terraform init -reconfigure'
                sh 'terraform plan -out=tfplan'
             }
         }
