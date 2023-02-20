@@ -61,8 +61,8 @@ pipeline {
         }  
 	stage ('Destroy') {
             steps {
-              input('Do you wan to DESTROY?')
-	        sh "terraform destroy"
+              input('Do you want to DESTROY?')
+	        sh "terraform destroy --auto-approve"
             }
         }    
     }
