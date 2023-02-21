@@ -2,68 +2,68 @@
 String credentialsId = 'awsCredentials'
 pipeline {
     agent any
-     environment {
+    environment {
         AWS_ACCESS_KEY_ID     = credentials('AWS_ACCESS_KEY_ID')
         AWS_SECRET_ACCESS_KEY = credentials('AWS_SECRET_ACCESS_KEY')
     }
     stages {
         stage('checkout') {
             steps {
-		cleanWs()
+                cleanWs()
                 checkout scm
             }
         }
         stage('Set Terraform path') {
             steps {
                 script {
-                    env.PATH += ":/usr/local/bin/"
+                    env.PATH += ":/usr/bin/terraform"
                 }
                 sh 'terraform --version'
-		sh 'pwd'
+                sh 'pwd'
             }
         }
-	stage('version') {
+        stage('Verify Tools') {
             steps {
-	      input ('Do you want to proceed?')	    
-                sh """
-                git --version
-                uptime
-                env
-                ls -ltr
-                """
-            }
-        }    
-        stage('Terraform Init') {
-            steps {
-               sh 'pwd'
-               sh 'terraform init -reconfigure'
-               sh 'terraform plan -input=false -out tfplan'
-	       sh 'terraform show -no-color tfplan > tfplan.txt'
+                parallel(
+                    "Terraform": { sh 'terraform -v' },
+                    "Docker": { sh 'docker -v' },
+                    "AWS": { sh 'aws --version' }
+                )
             }
         }
-	stage ('check plan') {
+        stage('Verify Other Tools') {
             steps {
-              input('Is terraform plan okay?')
+                parallel(
+                    "Git": { sh 'git --version' },
+                    "NPM": { sh 'npm -v' },
+                    "Ansible": { sh 'ansible --version' }
+                )
             }
-        } 
-	//stage ('Apply') {
-        //    steps {
-        //      input('Is terraform plan okay?')
-	//        sh "terraform apply -input=false tfplan"
-        //    }
-       // }
-	stage('Ansible version') {
+        }
+        stage('Terraform Plan') {
             steps {
-                sh """
-                ansible --version
-                """
-            }  
-        }  
-	stage ('Destroy') {
-            steps {
-              input('Do you want to DESTROY?')
-	        sh "terraform destroy --auto-approve"
+                sh 'pwd'
+                sh 'terraform init'
+                sh 'terraform plan -input=false -out tfplan'
+                sh 'terraform show -no-color tfplan > tfplan.txt'
             }
-        }    
+        }
+        stage('check plan') {
+            steps {
+                input('Is terraform plan okay?')
+            }
+        }
+        //stage ('Apply') {
+        //  steps {
+        //  input('Do you want to Apply?')
+        //  sh "terraform apply -input=false tfplan"
+        //  }
+        //}
+        stage('Destroy') {
+            steps {
+                input('Do you want to DESTROY?')
+                sh "terraform destroy --auto-approve"
+            }
+        }
     }
 }
